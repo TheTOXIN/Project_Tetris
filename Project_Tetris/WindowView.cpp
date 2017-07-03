@@ -60,17 +60,21 @@ void CWindowView::showLoading(RenderWindow & window)
 
 void CWindowView::showMenu(RenderWindow & window)
 {
-	window.clear();
-
+	Text ver("ver_1.0", font, 20);
+	Text toxin("TOXIN.itc", font, 20);
+	
 	checkCloseWindow(window);
 	moveBackground(background_3_S);
 
+	ver.setPosition(10, height - 30);
+	toxin.setPosition(width - 120, height - 30);
 	field_S.setPosition(width / 2 - field.getSize().x / 2, 0);
 	logo_S.setPosition(width / 2 - logo.getSize().x / 2, 10);
 	play_S.setPosition(width / 2 - play.getSize().x / 2, 220);
 	btn_settings_S.setPosition(play_S.getPosition().x, play_S.getPosition().y + 100);
 	btn_info_S.setPosition(play_S.getPosition().x + play.getSize().x - btn_info.getSize().x, btn_settings_S.getPosition().y);
 
+	window.clear();
 	window.draw(background_3_S);
 	window.draw(tmpBack);
 	window.draw(field_S);
@@ -78,6 +82,8 @@ void CWindowView::showMenu(RenderWindow & window)
 	window.draw(play_S);
 	window.draw(btn_settings_S);
 	window.draw(btn_info_S);
+	window.draw(ver);
+	window.draw(toxin);
 	window.display();
 }
 

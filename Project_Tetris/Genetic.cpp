@@ -49,7 +49,7 @@ void CGenetic::fitness()
 			GField.clearField();
 			bool isGameOver = false;
 			int countLineScore = 0;
-			GFigure = CTetris::game.factory.createFigure();
+			GFigure = CTetris::game.factory.createFigure(0);
 			int k = 0;
 			while (!isGameOver && k < countMove)
 			{
@@ -57,7 +57,7 @@ void CGenetic::fitness()
 				bestFigrue.land(GField);
 				countLineScore += GField.remove();
 				isGameOver = bestFigrue.getY() <= 0;
-				GFigure = CTetris::game.factory.createFigure();
+				GFigure = CTetris::game.factory.createFigure(GFigure.index);
 				k++;
 			}
 		}
@@ -66,7 +66,7 @@ void CGenetic::fitness()
 
 void CGenetic::searchMove(DNA &candidate)
 {
-	double bestScore = -9999;
+	double bestScore = -99999;
 	double tmpScore = 0;
 
 	for (int i = 0; i < 4; i++)
@@ -75,42 +75,55 @@ void CGenetic::searchMove(DNA &candidate)
 		GFigure.y = 0;
 		GFigure.countRotate(1);
 		GFigure.moveToAngle(GField);
-		while (true)
+
+		while (GFigure.isMaxRight(GField))
 		{
 			GFigure.downMax(GField);
 			CField landField = GField;
 			GFigure.land(landField);
 
-			candidate.fitness += landField.countLines();
-			tmpScore = (-candidate.heightWeight * landField.countHeight()) + (candidate.linesWeight * landField.countLines()) +
+			int lines = landField.countLines();
+			if (lines > 0) candidate.fitness += lines;
+			landField.remove();
+
+			tmpScore = (-candidate.heightWeight * landField.countHeight()) + (candidate.linesWeight * lines) +
 				(-candidate.holesWeight * landField.countHoles()) + (-candidate.monotontWeight * landField.countMonoton());
 
-			if (tmpScore > bestScore) {
+			if (tmpScore > bestScore)
+			{
 				bestScore = tmpScore;
 				bestFigrue = GFigure;
-				bestFigrue.r = i+1;
+				bestFigrue.r = i + 1;
 			}
-	
+
 			GFigure.upMax(GField);
 			GFigure.x++;
-
-			if (!GFigure.isMaxRight(GField))
-				break;
 		}
 	}
 }
 
 void CGenetic::selection(DNA parents[2])
 {
-	parents[0] = populations[rand() % (countDNA / 2)];
-	parents[1] = populations[rand() % (countDNA / 2)];
+	parents[0] = populations[rand() % (countDNA / 3)];
+	parents[1] = populations[rand() % (countDNA / 3)];
+
+	for (int i = 0; i < 3; i++)
+	{
+		DNA parent1 = populations[rand() % (countDNA / 3)];
+		DNA parent2 = populations[rand() % (countDNA / 3)];
+
+		if (parent1.fitness > parents[0].fitness)
+			parents[0] = parent1;
+		if (parent2.fitness > parents[1].fitness)
+			parents[1] = parent2;
+	}
 }
 
 void CGenetic::mutation(DNA &candidate)
 {
 	int random = rand() % 10;
 	int parametr = rand() % 4;
-	double quantity = (double)(rand()) / RAND_MAX - 0.5;
+	double quantity = (double)(rand()) / RAND_MAX;
 	if (random == 1)
 	{
 		switch (parametr)
@@ -130,11 +143,13 @@ void CGenetic::crossover()
 	for (int i = 0; i < countBirth; i++)
 	{
 		selection(parents);
+
 		birth.heightWeight = parents[0].fitness * parents[0].heightWeight + parents[1].fitness * parents[1].heightWeight;
 		birth.linesWeight = parents[0].fitness * parents[0].linesWeight + parents[1].fitness * parents[1].linesWeight;
 		birth.holesWeight = parents[0].fitness * parents[0].holesWeight + parents[1].fitness * parents[1].holesWeight;
 		birth.monotontWeight = parents[0].fitness * parents[0].monotontWeight + parents[1].fitness * parents[1].monotontWeight;
 		birth.fitness = 0;
+
 		mutation(birth);
 		normalize(birth);
 		birth.number = populations[countDNA - 1 - i].number;
@@ -144,7 +159,7 @@ void CGenetic::crossover()
 
 void CGenetic::sort()
 {
-	for (int i = 0; i < countDNA-1; i++)
+	for (int i = 0; i < countDNA - 1; i++)
 	{
 		for (int j = i + 1; j < countDNA; j++)
 		{
@@ -175,10 +190,10 @@ void CGenetic::generation()
 	srand(unsigned(time(NULL)));
 	for (int i = 0; i < countDNA; i++)
 	{
-		populations[i].heightWeight = (double)(rand()) / RAND_MAX - 0.5;
-		populations[i].linesWeight = (double)(rand()) / RAND_MAX - 0.5;
-		populations[i].holesWeight = (double)(rand()) / RAND_MAX - 0.5;
-		populations[i].monotontWeight = (double)(rand()) / RAND_MAX - 0.5;
+		populations[i].heightWeight = (double)(rand()) / RAND_MAX;
+		populations[i].linesWeight = (double)(rand()) / RAND_MAX;
+		populations[i].holesWeight = (double)(rand()) / RAND_MAX;
+		populations[i].monotontWeight = (double)(rand()) / RAND_MAX;
 		populations[i].fitness = 0;
 		populations[i].number = i + 1;
 		normalize(populations[i]);
@@ -261,4 +276,5 @@ void CGenetic::printTheBestCondodate()
 	cout << bestCondidate.monotontWeight << " | ";
 	cout << "F = " << bestCondidate.fitness << endl;
 }
+
 
